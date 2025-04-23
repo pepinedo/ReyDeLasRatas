@@ -22,13 +22,11 @@ export const ContextProvider = ({children}) => {
     room_code: "",
     round: 0,
     day_phase: 0,
-    total_players: 0,
-    dead_players: 0,
-    players_ready: 0
   });
+
+  const [userList, setUserList] = useState([])
   
   const [isInRoom, SetIsInRoom] = useState(false)
-  const [gameOn, setGameOn] = useState(false)
 
   return (
     <ReyDeLasRatasContext.Provider value={{
@@ -36,9 +34,9 @@ export const ContextProvider = ({children}) => {
         setUser,
         room,
         setRoom,
+        userList,
+        setUserList,
         isInRoom,
-        gameOn,
-        setGameOn
     }}>
         {children}
     </ReyDeLasRatasContext.Provider>

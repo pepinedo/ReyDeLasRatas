@@ -2,9 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { ReyDeLasRatasContext } from '../../ContextProvider/ContextProvider';
 import Chat from '../../components/Chat/Chat';
 
-const Room = ({ socket, setShowRoom }) => {
-  let {room, setRoom, user, setUser, setGameOn } = useContext(ReyDeLasRatasContext)
-  const [userList, setUserList] = useState([])
+const Room = ({ socket, setShowRoom, setGameOn }) => {
+  let {room, setRoom, user, setUser, userList, setUserList } = useContext(ReyDeLasRatasContext)
 
   //La escucha de que algun usuario ha cambiado algo
   socket.on("room_user_list", (data)=>{
@@ -40,18 +39,14 @@ const Room = ({ socket, setShowRoom }) => {
             result += 1;
           }
         }
-        console.log(result, userList.length);
         
         if(result == userList.length){
           setRoom({...room, round: 1})
-          socket.emit("handle_room_changes", {room, change: "round"})
-          console.log("Se cambia a 1");
-          
+          socket.emit("handle_room_changes", {room, change: "round"})          
         }
         else{
           setRoom({...room, round: 0})
           socket.emit("handle_room_changes", {room, change: "round"})
-          console.log("Se cambia a 0");
         }
       }
 
@@ -59,9 +54,23 @@ const Room = ({ socket, setShowRoom }) => {
 
   //Empezar el juego
   const startGame =()=>{
-    setGameOn(true)
-    setShowRoom(false)
+      socket.emit("start_game", {room, userList})
   }
+
+  //La escucha de que alguien le de a "Empezar"
+  socket.on("start_game", (data)=>{
+
+    for(let da of data){
+      if(da.user_id === user.user_id){
+        console.log(da);
+        setUser({...da, is_ready: false})
+      }
+    }
+    setUserList(data);
+    setShowRoom(false);
+    setRoom({...room, day_phase: 1})
+    setGameOn(true);
+  })
 
   //Salir de la sala
   const salirDeLaSala =()=>{
@@ -82,9 +91,6 @@ const Room = ({ socket, setShowRoom }) => {
       room_code: "",
       round: 0,
       day_phase: 0,
-      total_players: 0,
-      dead_players: 0,
-      players_ready: 0
     })
     setShowRoom(false)
     socket.emit("leave_room", room.room_code)
@@ -95,7 +101,7 @@ const Room = ({ socket, setShowRoom }) => {
       <h2>Sala {room?.room_name} </h2>
       <p>Código: <strong>{room?.room_code}</strong> </p>
       <p>Bienvenido {user?.nick} </p>
-      {room?.round === 1 && <button>Empezar</button>}
+      {room?.round === 1 && <button onClick={startGame} >Empezar</button>}
       <div>
         <h4>Usuarios en la sala:</h4>
         {userList?.map((elem)=>{

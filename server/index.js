@@ -6,6 +6,7 @@ import cors from 'cors'
 import roomControllers from "./modules/room/room.controllers.js";
 import userControllers from "./modules/user/user.controllers.js";
 import { room_user_list } from "./utils/socketFunctions.js";
+import gameControllers from "./modules/game/game.controllers.js";
 
 const port = process.env.PORT ?? 3000;
 
@@ -51,7 +52,6 @@ io.on("connection", (socket)=>{
                 await roomControllers.UnirseSala(data, socket.id)
                 const room_result = await roomControllers.RoomInfo(data.room_code)
                 const user_result = await userControllers.UserInfo(socket.id)
-                console.log(room_result);
                 if(!room_result){
                     socket.emit("join_room", {room: "No existe"})
                 }
@@ -107,6 +107,20 @@ io.on("connection", (socket)=>{
         io.to(data.room_code).emit('send_message', data);  
     })
 
+    //Empezar el juego
+    socket.on("start_game", (data)=>{
+        console.log(socket.id + " start_game");
+
+        const start_game = async()=>{
+            const roles = gameControllers.crearRoles(data.userList.length)
+            const userList = await gameControllers.asignarRoles(data.room.room_code, roles)
+            io.to(data.room.room_code).emit("start_game", userList)
+                
+        }
+        start_game();
+        
+    })
+
     //Un usuario abandona la sala
     socket.on("leave_room", (room_code)=>{
         console.log(socket.id + " se ha salido de la sala" + room_code);
@@ -121,6 +135,12 @@ io.on("connection", (socket)=>{
                     await roomControllers.DeleteRoom(room_code)
                 }
                 io.to(room_code).emit("room_user_list", room_list)
+                io.to(room_code).emit('send_message', {
+                    nick: "Server",
+                    room_code,
+                    msg: `Alguien se ha desconectado`,
+                    time: new Date().toLocaleTimeString()
+                }); 
             } 
             catch (error) {
                 console.error(error); 
@@ -144,6 +164,12 @@ io.on("connection", (socket)=>{
                     await roomControllers.DeleteRoom(room_code)
                 }
                 io.to(room_code).emit("room_user_list", room_list)
+                io.to(room_code).emit('send_message', {
+                    nick: "Server",
+                    room_code,
+                    msg: `Alguien se ha desconectado`,
+                    time: new Date().toLocaleTimeString()
+                }); 
             } 
             catch (error) {
                 console.error(error); 
