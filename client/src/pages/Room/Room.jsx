@@ -32,7 +32,7 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
   //Cuando todos estan listos
   useEffect(()=>{
         
-      if(userList.length > 1){      
+      if(userList.length >= 5){      
         let result = 0
         for(let i = 0; i < userList.length; i++){
           if(userList[i].is_ready){

@@ -121,6 +121,19 @@ io.on("connection", (socket)=>{
         
     })
 
+    //Un lobo hace objetivo a Alguien
+    socket.on("seleccionar_objetivo_lobo", (data)=>{
+        console.log(socket.id + " entra en seleccionar_objetivo_lobo");
+        console.log(data);
+        io.to(data.room_code).emit("seleccionar_objetivo_lobo", data.user_id)
+    })
+    //Un lobo quita un objetivo
+    socket.on("quitar_objetivo_lobo", (data)=>{
+        console.log(socket.id + " entra en quitar_objetivo_lobo")
+        console.log(data);
+        io.to(data.room_code).emit("quitar_objetivo_lobo", data.user_id)
+    })
+
     //Un usuario abandona la sala
     socket.on("leave_room", (room_code)=>{
         console.log(socket.id + " se ha salido de la sala" + room_code);
