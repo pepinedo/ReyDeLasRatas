@@ -5,7 +5,6 @@ import { createServer } from "node:http"
 import cors from 'cors'
 import roomControllers from "./modules/room/room.controllers.js";
 import userControllers from "./modules/user/user.controllers.js";
-import { room_user_list } from "./utils/socketFunctions.js";
 import gameControllers from "./modules/game/game.controllers.js";
 
 const port = process.env.PORT ?? 3000;
@@ -99,7 +98,12 @@ io.on("connection", (socket)=>{
     //Algún cambio en la sala
     socket.on("handle_room_changes", (data)=>{
         console.log(socket.id + " ha entrado en handle_room_changes");
-        
+
+        const handle_room_changes = async()=>{
+            const info_room = await roomControllers.RoomHasChanges(data);
+            io.to(data.room.room_code).emit("handle_room_changes", info_room);
+        }
+        handle_room_changes();
     })
 
     //Un usuario envia un mensaje
@@ -112,10 +116,11 @@ io.on("connection", (socket)=>{
         console.log(socket.id + " start_game");
 
         const start_game = async()=>{
-            const roles = gameControllers.crearRoles(data.userList.length)
-            const userList = await gameControllers.asignarRoles(data.room.room_code, roles)
+            const roles = await gameControllers.crearRoles(data.userList.length)
+            await gameControllers.asignarRoles(data.room.room_code, roles)
+            await userControllers.QuitarListoEnTodos(data.room.room_code)
+            let userList = await roomControllers.RoomUserList(data.room.room_code)
             io.to(data.room.room_code).emit("start_game", userList)
-                
         }
         start_game();
         
@@ -125,13 +130,26 @@ io.on("connection", (socket)=>{
     socket.on("seleccionar_objetivo_lobo", (data)=>{
         console.log(socket.id + " entra en seleccionar_objetivo_lobo");
         console.log(data);
-        io.to(data.room_code).emit("seleccionar_objetivo_lobo", data.user_id)
+        io.to(data.room_code).emit("seleccionar_objetivo_lobo", {
+            user_id: data.user_id,
+            objetive_id: data.objetive_id,
+            nick_del_lobo: data.nick_del_lobo
+        })
     })
     //Un lobo quita un objetivo
     socket.on("quitar_objetivo_lobo", (data)=>{
         console.log(socket.id + " entra en quitar_objetivo_lobo")
         console.log(data);
-        io.to(data.room_code).emit("quitar_objetivo_lobo", data.user_id)
+        io.to(data.room_code).emit("quitar_objetivo_lobo", {
+            user_id: data.user_id,
+            objetive_id: data.objetive_id,
+            nick_del_lobo: data.nick_del_lobo
+        })
+    })
+
+    //Cambiar de fase, cuando todos has hecho sus acciones
+    socket.on("quitar_listo_de_todos", (data)=>{
+        console.log(data);
     })
 
     //Un usuario abandona la sala
@@ -170,6 +188,7 @@ io.on("connection", (socket)=>{
             try {
                 let room_list = await roomControllers.RoomUserListWhenDisconnect(socket.id)
                 let room_code = await roomControllers.GetRoomCode(socket.id)
+                let nick = await userControllers.GetNick(socket.id);
                 await userControllers.UserDisconnected(socket.id);
                 socket.leave(room_code)
 
@@ -180,7 +199,7 @@ io.on("connection", (socket)=>{
                 io.to(room_code).emit('send_message', {
                     nick: "Server",
                     room_code,
-                    msg: `Alguien se ha desconectado`,
+                    msg: `${nick} se ha desconectado`,
                     time: new Date().toLocaleTimeString()
                 }); 
             } 

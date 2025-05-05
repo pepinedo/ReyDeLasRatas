@@ -155,6 +155,35 @@ class RoomControllers {
         }
     }
 
+    RoomHasChanges = async(data)=>{
+        const {room, change, set} = data;
+        let result;
+
+        let connection = await dbPool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            //Actualizar la sala
+            const sql_actualizar_cambios = `UPDATE room SET ${change}=? WHERE room_id=?`;
+            const values = [set, room.room_id];
+            await connection.execute(sql_actualizar_cambios, values)
+
+            //Obtener los cambios de la sala
+            let sql_info_sala = `SELECT * FROM room WHERE room_id=?`
+            result = await connection.execute(sql_info_sala, [room.room_id])
+
+            await connection.commit();
+        }
+        catch (error) {
+            await connection.rollback();
+            console.error(error);
+        }
+        finally{
+            connection.release()
+        }
+        return result[0][0];
+    }
+
 } //Fin del RoomControllers
 
 

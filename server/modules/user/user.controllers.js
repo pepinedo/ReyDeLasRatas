@@ -56,6 +56,36 @@ class UserControllers {
         }    
     }
 
+    GetNick = async(data)=>{
+        let nick;
+        let connection = await dbPool.getConnection()
+        try {
+            let sql = "SELECT nick FROM user WHERE user_socket_id=?"
+            nick = await connection.query(sql, [data]);
+        } 
+        catch (error) {
+            console.error(error); 
+        }
+        finally{
+            connection.release()
+        }
+        return nick[0][0].nick;
+    }
+
+    QuitarListoEnTodos = async(room_code)=>{
+        let connection = await dbPool.getConnection()
+        try {
+            let sql = "UPDATE user SET is_ready=0 WHERE room_code=?"
+            await connection.execute(sql, [room_code])
+        } 
+        catch (error) {
+            console.error(error); 
+        }
+        finally{
+            connection.release()
+        }
+    }
+
 } //Fin de UserControllers
 
 export default new UserControllers;

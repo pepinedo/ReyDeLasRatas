@@ -12,7 +12,7 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
 
   //La escucha de que algo en la sala ha cambiado
   socket.on("handle_room_changes", (data)=>{
-    console.log(data);
+    setRoom(data)
   })
 
   //Obtener la lista de usuarios
@@ -22,35 +22,33 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
       }
   },[])
 
-  //Cuando el usuaario cambia su estado
+  //Cuando el usuario cambia su estado
   useEffect(()=>{
       if(user.user_id){
         socket.emit("handle_user_changes", {user, change: "is_ready"})
       }
   },[user])
 
-  //Cuando todos estan listos
-  useEffect(()=>{
-        
-      if(userList.length >= 5){      
-        let result = 0
-        for(let i = 0; i < userList.length; i++){
-          if(userList[i].is_ready){
-            result += 1;
-          }
-        }
-        
-        if(result == userList.length){
-          setRoom({...room, round: 1})
-          socket.emit("handle_room_changes", {room, change: "round"})          
-        }
-        else{
-          setRoom({...room, round: 0})
-          socket.emit("handle_room_changes", {room, change: "round"})
+  const listo_para_empezar =()=>{
+
+    setUser({...user, is_ready: !user.is_ready})
+
+    if(userList.length >= 5){      
+      let result = 0
+      for(let i = 0; i < userList.length; i++){
+        if(userList[i].is_ready){
+          result += 1;
         }
       }
-
-  },[userList])
+      
+      if(result == userList.length - 1 && !user.is_ready){
+        socket.emit("handle_room_changes", {room, change: "round", set: 1})   
+      }
+      else{
+        socket.emit("handle_room_changes", {room, change: "round", set: 0}) 
+      }
+    }
+  }
 
   //Empezar el juego
   const startGame =()=>{
@@ -62,13 +60,11 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
 
     for(let da of data){
       if(da.user_id === user.user_id){
-        console.log(da);
-        setUser({...da, is_ready: false})
+        setUser({...da})
       }
     }
     setUserList(data);
     setShowRoom(false);
-    setRoom({...room, day_phase: 1})
     setGameOn(true);
   })
 
@@ -112,7 +108,7 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
       </div>
 
       <div>
-        <button onClick={()=>setUser({...user, is_ready: !user.is_ready})} >{!user.is_ready ? "Listo":"Cancelar"}</button>
+        <button onClick={listo_para_empezar} >{!user.is_ready ? "Listo":"Cancelar"}</button>
         <br />
         <button onClick={salirDeLaSala} >Salir</button>
       </div>

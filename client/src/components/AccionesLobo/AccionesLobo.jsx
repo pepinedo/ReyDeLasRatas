@@ -1,43 +1,82 @@
-import React, { useState } from 'react'
 
-export const AccionesLobo = ({socket, room, userList, objetivosLobos, setObjetivosLobos}) => {
+
+export const AccionesLobo = ({socket, user, room, userList, objetivosLobos, setObjetivosLobos}) => {
 
     //botón del lobo de elegir objetivo
-    const objetivo_de_muerte =(user_id)=>{
-        if(!objetivosLobos.includes(user_id)){
-            socket.emit("seleccionar_objetivo_lobo", {user_id, room_code: room.room_code})
-        }
-        else{
-            socket.emit("quitar_objetivo_lobo", {user_id, room_code: room.room_code})
-        }
-    }
-    socket.on("seleccionar_objetivo_lobo", (user_id)=>{
-        console.log("seleccionar_objetivo_lobo", user_id);
-        let aux = [...objetivosLobos]
-        aux.push(user_id)
-        
-        setObjetivosLobos(aux)
-        console.log(aux);
-    })
-    socket.on("quitar_objetivo_lobo", (user_id)=>{
-        console.log("quitar_objetivo_lobo", user_id);
-        setObjetivosLobos(objetivosLobos.filter((elem)=> elem !== user_id ))
-    })
+    const objetivo_de_muerte =(objetive_id)=>{
 
-    console.log("objetivos: ", objetivosLobos);
+        const objetivoSeleccionadoPorMi = objetivosLobos.some(
+            elem => elem.objetive_id === objetive_id && elem.user_id === user.user_id
+        );
+        const objetivoSeleccionadoPorOtro = objetivosLobos.some(
+            elem => elem.objetive_id === objetive_id && elem.user_id !== user.user_id
+        );
+        const yaTieneObjetivoSeleccionado = objetivosLobos.some(
+            elem => elem.user_id === user.user_id
+        );
+        const enviarObjetivoSeleccionado =()=>{
+            socket.emit("seleccionar_objetivo_lobo", {
+                user_id: user.user_id, 
+                nick_del_lobo: user.nick,
+                objetive_id, 
+                room_code: room.room_code
+            })
+        };
+        const enviarQuitarObjetivo =()=>{
+            socket.emit("quitar_objetivo_lobo", {
+                user_id: user.user_id, 
+                nick_del_lobo: user.nick,
+                objetive_id, 
+                room_code: room.room_code
+            })
+        };
+
+        if(objetivoSeleccionadoPorOtro && !objetivoSeleccionadoPorMi && !yaTieneObjetivoSeleccionado){
+            enviarObjetivoSeleccionado();
+        }
+        else if(!objetivoSeleccionadoPorMi && !yaTieneObjetivoSeleccionado){
+            enviarObjetivoSeleccionado();
+        }
+        else if (objetivoSeleccionadoPorMi) {
+            enviarQuitarObjetivo();
+        }
+        else if(!objetivoSeleccionadoPorMi && yaTieneObjetivoSeleccionado){
+            enviarQuitarObjetivo();
+            enviarObjetivoSeleccionado();
+        }
+        socket.emit("handle_user_changes", {user, change: "is_ready"})
+    };
+
+    socket.on("seleccionar_objetivo_lobo", (data)=>{
+        let aux = [...objetivosLobos]
+        aux.push(data)
+        setObjetivosLobos(aux)
+    });
+    socket.on("quitar_objetivo_lobo", (data)=>{
+        setObjetivosLobos(objetivosLobos.filter((elem)=> elem.user_id !== data.user_id ))
+    });
     
   return (
     <div>
         <p>Elige a quien matar</p>
         {userList?.map((elem)=>{
-            if(elem.rol != "Lobo"){
+            if(elem.rol != "Lobo"){                
                 return(
-                    <div>
-                        <button key={elem.user_id} onClick={()=>objetivo_de_muerte(elem.user_id)} >{elem?.nick}  </button>
-                        {objetivosLobos.includes(elem.user_id) && <p>🐺</p>}
+                    <div key={elem.user_id}>
+                        <button onClick={()=>objetivo_de_muerte(elem.user_id)} >{elem?.nick}  </button>
+                        {objetivosLobos.map((elem2)=>{
+                            if(elem2.objetive_id === elem.user_id){
+                                return(
+                                    <p>{elem.nick} Seleccionado por {elem2.nick_del_lobo}</p>
+                                )
+                            }
+                        })}
                     </div>
                 )
         }})}
     </div>
   )
 }
+
+
+/* {objetivosLobos.find(obj => obj.objetive_id === elem.user_id)?.nick_del_lobo} */

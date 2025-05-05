@@ -20,6 +20,7 @@ export const Home = ({socket}) => {
           <button onClick={()=>setShowCreateRoom(true)} >Crear Sala</button>
           <button onClick={()=>setShowJoinRoom(true)} >Unirse a Sala</button>
         </div>}
+
         {showCreateRoom && 
             <CreateRoom 
                 socket={socket} 
@@ -44,6 +45,8 @@ export const Home = ({socket}) => {
         {gameOn && 
           <Game 
               socket={socket}
+              setShowRoom={setShowRoom}
+              setGameOn={setGameOn}
           />
         }
       </div>
