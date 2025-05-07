@@ -7,7 +7,7 @@ export const CreateRoom = ({socket, setShowCreateRoom, setShowRoom}) => {
 
     const [nick, setNick] = useState('');
     const [roomName, setRoomName] = useState("")
-    let { setUser, setRoom } = useContext(ReyDeLasRatasContext)
+    let { setUser, setRoom, setUserList } = useContext(ReyDeLasRatasContext)
 
     const CreateRoom = async(e)=>{
         e.preventDefault();
@@ -30,6 +30,7 @@ export const CreateRoom = ({socket, setShowCreateRoom, setShowRoom}) => {
     socket.on("create_room", (data)=>{
         setUser(data.user)
         setRoom(data.room)
+        setUserList(data.userList)
     })
 
   return (

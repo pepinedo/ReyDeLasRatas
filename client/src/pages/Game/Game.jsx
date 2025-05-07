@@ -10,7 +10,7 @@ export const Game = ({socket})=> {
     const [votos, setVotos] = useState([])
 
     //La escucha de que algun usuario ha cambiado algo
-    socket.on("room_user_list", (data)=>{
+    socket.on("room_user_list", (data)=>{      
       setUserList(data);
     })
 
@@ -19,39 +19,23 @@ export const Game = ({socket})=> {
       setRoom(data)
     })
 
-    //La escucha de que todos estan listos, para cambiar de Fase
     const listo_cancelar =()=>{
+        //esta funcion se ejecuta despues del setUser y el socket.emit("handle_user_changes")
+        setTimeout(()=>{
+          socket.emit("change_phase", room.room_code)
+        }, 100);
+        
+        if(room.day_phase === 4){
+          setTimeout(()=>{
+            socket.emit("change_round", room.room_code)
+          }, 50);
+        }
 
         setUser({...user, is_ready: !user.is_ready})
-        socket.emit("handle_user_changes", {user, change: "is_ready"})
-        if(userList.length >= 5){      
-          let result = 0
-          for(let i = 0; i < userList.length; i++){
-            if(userList[i].is_ready){
-              result += 1;
-            }
-          }
-          if(result == userList.length && room.day_phase === 0){
-            socket.emit("handle_room_changes", {room, change: "day_phase", set: 1})
-            socket.emit("quitar_listo_de_todos", {room_code: room.room_code})
-          }
-          else if(result == userList.length && room.day_phase === 1){
-            socket.emit("handle_room_changes", {room, change: "day_phase", set: 2})
-            socket.emit("quitar_listo_de_todos", {room_code: room.room_code}) 
-          }
-          else if(result == userList.length && room.day_phase === 2){
-            socket.emit("handle_room_changes", {room, change: "day_phase", set: 3})
-            socket.emit("quitar_listo_de_todos", {room_code: room.room_code}) 
-          }
-          else if(result == userList.length && room.day_phase === 3){
-            socket.emit("handle_room_changes", {room, change: "day_phase", set: 4})
-            socket.emit("quitar_listo_de_todos", {room_code: room.room_code}) 
-          }
-          else if(result == userList.length && room.day_phase === 4){
-            socket.emit("handle_room_changes", {room, change: "day_phase", set: 1})
-            socket.emit("quitar_listo_de_todos", {room_code: room.room_code})
-          }
-        }
+        socket.emit("handle_user_changes", {
+          user, 
+          change: "is_ready", 
+          set: !user.is_ready})
     }
 
   return (
@@ -72,6 +56,9 @@ export const Game = ({socket})=> {
             {room?.day_phase === 3 && <p>Fase del día: ☀️ Votaciones ☀️</p>}
             {room?.day_phase === 4 && <p>Fase del día: ☀️ Resultados ☀️</p>}
         </div>
+
+        {room?.day_phase === 0 &&
+        <button onClick={listo_cancelar}>{!user?.is_ready ? "Listo" : "Cancelar"} </button>}
 
         {room?.day_phase === 1 &&
         <>
@@ -96,6 +83,15 @@ export const Game = ({socket})=> {
             />
           }
         </>}
+
+        {room?.day_phase === 2 &&
+        <button onClick={listo_cancelar}>{user?.is_ready ? "Cancelar" : "Siguiente"} </button>}
+
+        {room?.day_phase === 3 &&
+        <button onClick={listo_cancelar}>{user?.is_ready ? "Cancelar" : "Siguiente"} </button>}
+
+        {room?.day_phase === 4 &&
+        <button onClick={listo_cancelar}>{user?.is_ready ? "Cancelar" : "Siguiente"} </button>}
     </>
   )
 }

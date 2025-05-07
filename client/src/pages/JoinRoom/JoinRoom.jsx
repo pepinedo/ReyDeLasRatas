@@ -6,7 +6,7 @@ export const JoinRoom = ({socket, setShowJoinRoom, setShowRoom}) => {
     const [nick, setNick] = useState('');
     const [roomCode, setRoomCode] = useState('')
     const [error, setError] = useState("");
-    let { setUser, setRoom } = useContext(ReyDeLasRatasContext)
+    let { setUser, setRoom, setUserList } = useContext(ReyDeLasRatasContext)
 
     socket.on("join_room", (data)=>{
       if(data.room === "No existe"){
@@ -18,6 +18,7 @@ export const JoinRoom = ({socket, setShowJoinRoom, setShowRoom}) => {
         setShowRoom(true)
         setUser(data.user)
         setRoom(data.room)
+        setUserList(data.userList)
       }
   })
 

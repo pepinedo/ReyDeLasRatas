@@ -32,9 +32,10 @@ io.on("connection", (socket)=>{
                 await roomControllers.CrearSala(data, socket.id)
                 const room_result = await roomControllers.RoomInfo(data.room_code)
                 const user_result = await userControllers.UserInfo(socket.id)
+                const userList_result = await roomControllers.RoomUserList(data.room_code)
 
                 socket.join(data.room_code)
-                socket.emit("create_room", {room: room_result, user: user_result})
+                socket.emit("create_room", {room: room_result, user: user_result, userList: userList_result})
             } catch (error) {
                 console.log(error);
             }
@@ -51,14 +52,15 @@ io.on("connection", (socket)=>{
                 await roomControllers.UnirseSala(data, socket.id)
                 const room_result = await roomControllers.RoomInfo(data.room_code)
                 const user_result = await userControllers.UserInfo(socket.id)
+                const userList_result = await roomControllers.RoomUserList(data.room_code)
                 if(!room_result){
                     socket.emit("join_room", {room: "No existe"})
                 }
                 else{
                     socket.join(data.room_code)
-                    socket.emit("join_room", {room: room_result, user: user_result})
+                    socket.emit("join_room", {room: room_result, user: user_result, userList: userList_result})
+                    socket.to(data.room_code).emit("room_user_list", userList_result)
                 }
-
             } 
             catch (error) {
                 console.error(error);
@@ -147,9 +149,69 @@ io.on("connection", (socket)=>{
         })
     })
 
+    //Cambiar de ronda, cuanto todos estan listos
+    socket.on("change_round", (room_code)=>{
+        console.log("change_round");
+
+        //cambiar de ronda
+        const cambiar_de_ronda = async()=>{
+            const todosListos = await userControllers.TodosListos(room_code);
+            const info_room = await roomControllers.RoomInfo(room_code);
+            
+            if(todosListos){
+                const info_room_return = await roomControllers.RoomHasChanges({
+                    room: info_room, 
+                    change: "round",
+                    set: info_room.day_phase + 1
+                });
+                await userControllers.QuitarListoEnTodos(room_code);
+                const userList_actualizada = roomControllers.RoomUserList(room_code)
+                io.to(room_code).emit("room_user_list", userList_actualizada);
+                io.to(room_code).emit("handle_room_changes", info_room_return);
+            }
+
+        }
+        cambiar_de_ronda();
+    })
+
     //Cambiar de fase, cuando todos has hecho sus acciones
-    socket.on("quitar_listo_de_todos", (data)=>{
-        console.log(data);
+    socket.on("change_phase", (data)=>{
+        console.log("change_phase");
+
+        //cambiar de ronda
+        const cambiar_de_fase = async()=>{
+            const todosListos = await userControllers.TodosListos(room_code);
+            const info_room = await roomControllers.RoomInfo(room_code);
+            
+            if(todosListos){
+                let set;
+                if(info_room.round === 0){
+                    set = 1;
+                }
+                else if(info_room.round === 1){
+                    set = 2;
+                }
+                else if(info_room.round === 2){
+                    set = 3;
+                }
+                else if(info_room.round === 3){
+                    set = 4;
+                }
+                else if(info_room.round === 4){
+                    set = 1
+                }
+                const info_room_return = await roomControllers.RoomHasChanges({
+                    room: info_room, 
+                    change: "day_phase",
+                    set});
+                await userControllers.QuitarListoEnTodos(room_code);
+                const userList_actualizada = roomControllers.RoomUserList(room_code)
+                io.to(room_code).emit("handle_room_changes", info_room_return);
+                io.to(room_code).emit("room_user_list", userList_actualizada);
+            }
+
+        }
+        cambiar_de_fase();
     })
 
     //Un usuario abandona la sala
