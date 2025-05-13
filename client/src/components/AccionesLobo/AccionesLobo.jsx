@@ -1,6 +1,6 @@
 
 
-export const AccionesLobo = ({socket, user, room, userList, objetivosLobos, setObjetivosLobos}) => {
+export const AccionesLobo = ({socket, user, setUser, room, userList, objetivosLobos, setObjetivosLobos, listo_cancelar}) => {
 
     //botón del lobo de elegir objetivo
     const objetivo_de_muerte =(objetive_id)=>{
@@ -44,7 +44,8 @@ export const AccionesLobo = ({socket, user, room, userList, objetivosLobos, setO
             enviarQuitarObjetivo();
             enviarObjetivoSeleccionado();
         }
-        socket.emit("handle_user_changes", {user, change: "is_ready"})
+        socket.emit("handle_user_changes", {user, change: "is_ready", set: false})
+        setUser({...user, is_ready: false})
     };
 
     socket.on("seleccionar_objetivo_lobo", (data)=>{
@@ -55,6 +56,9 @@ export const AccionesLobo = ({socket, user, room, userList, objetivosLobos, setO
     socket.on("quitar_objetivo_lobo", (data)=>{
         setObjetivosLobos(objetivosLobos.filter((elem)=> elem.user_id !== data.user_id ))
     });
+
+    console.table(objetivosLobos)
+    
     
   return (
     <div>
@@ -74,9 +78,7 @@ export const AccionesLobo = ({socket, user, room, userList, objetivosLobos, setO
                     </div>
                 )
         }})}
+        {objetivosLobos.some(obj => obj.nick_del_lobo === user.nick) && <button onClick={listo_cancelar}>{user?.is_ready?"Cancelar":"Listo"}</button>}
     </div>
   )
 }
-
-
-/* {objetivosLobos.find(obj => obj.objetive_id === elem.user_id)?.nick_del_lobo} */

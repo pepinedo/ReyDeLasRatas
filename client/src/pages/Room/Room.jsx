@@ -32,7 +32,7 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
   const listo_para_empezar =()=>{
     //esta funcion se ejecuta despues del setUser y el socket.emit("handle_user_changes")
     setTimeout(()=>{
-      socket.emit("change_round", room.room_code)
+      socket.emit("¿start_game?", room.room_code)
     }, 50);
 
     setUser({...user, is_ready: !user.is_ready})
@@ -82,7 +82,7 @@ const Room = ({ socket, setShowRoom, setGameOn }) => {
       {room?.round === 1 && <button onClick={startGame} >Empezar</button>}
       <div>
         <h4>Usuarios en la sala:</h4>
-        {userList?.map((elem)=>{
+        {Array.isArray(userList) && userList?.map((elem)=>{
           return (
             <p key={elem.user_id}>{elem.nick} {elem?.is_ready ? "✅":null} </p>
           )

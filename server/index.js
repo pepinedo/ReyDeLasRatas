@@ -113,6 +113,35 @@ io.on("connection", (socket)=>{
         io.to(data.room_code).emit('send_message', data);  
     })
 
+    //Activar boton de empezar juego
+    socket.on("¿start_game?", (room_code)=>{
+        console.log("¿start_game?");
+
+        //cambiar de ronda
+        const activar_desactivar_boton_empezar = async()=>{
+            const todosListos = await userControllers.TodosListos(room_code);
+            const info_room = await roomControllers.RoomInfo(room_code);
+            
+            if(todosListos){
+                const info_room_return = await roomControllers.RoomHasChanges({
+                    room: info_room, 
+                    change: "round",
+                    set: 1
+                });
+                io.to(room_code).emit("handle_room_changes", info_room_return);
+            }
+            else{
+                const info_room_return = await roomControllers.RoomHasChanges({
+                    room: info_room, 
+                    change: "round",
+                    set: 0
+                });
+                io.to(room_code).emit("handle_room_changes", info_room_return);
+            }
+        }
+        activar_desactivar_boton_empezar();
+    })
+
     //Empezar el juego
     socket.on("start_game", (data)=>{
         console.log(socket.id + " start_game");
@@ -149,6 +178,48 @@ io.on("connection", (socket)=>{
         })
     })
 
+    //Cambiar de fase, cuando todos has hecho sus acciones
+    socket.on("change_phase", (room_code)=>{
+        console.log("change_phase");
+
+        //cambiar de ronda
+        const cambiar_de_fase = async()=>{
+            const todosListos = await userControllers.TodosListos(room_code);
+            const info_room = await roomControllers.RoomInfo(room_code);
+            
+            if(todosListos){
+                let set;
+                if(info_room.day_phase === 0){
+                    set = 1;
+                }
+                else if(info_room.day_phase === 1){
+                    set = 2;
+                }
+                else if(info_room.day_phase === 2){
+                    set = 3;
+                }
+                else if(info_room.day_phase === 3){
+                    set = 4;
+                }
+                else if(info_room.day_phase === 4){
+                    set = 1
+                }
+                const info_room_return = await roomControllers.RoomHasChanges({
+                    room: info_room, 
+                    change: "day_phase",
+                    set
+                });
+                io.to(room_code).emit("handle_room_changes", info_room_return);
+
+                await userControllers.QuitarListoEnTodos(room_code);
+                const userList_actualizada = await roomControllers.RoomUserList(room_code);
+                io.to(room_code).emit("room_user_list", userList_actualizada);
+            }
+
+        }
+        cambiar_de_fase();
+    })
+
     //Cambiar de ronda, cuanto todos estan listos
     socket.on("change_round", (room_code)=>{
         console.log("change_round");
@@ -162,56 +233,16 @@ io.on("connection", (socket)=>{
                 const info_room_return = await roomControllers.RoomHasChanges({
                     room: info_room, 
                     change: "round",
-                    set: info_room.day_phase + 1
+                    set: info_room.round + 1
                 });
                 await userControllers.QuitarListoEnTodos(room_code);
-                const userList_actualizada = roomControllers.RoomUserList(room_code)
+                const userList_actualizada = await roomControllers.RoomUserList(room_code);                
                 io.to(room_code).emit("room_user_list", userList_actualizada);
                 io.to(room_code).emit("handle_room_changes", info_room_return);
             }
 
         }
         cambiar_de_ronda();
-    })
-
-    //Cambiar de fase, cuando todos has hecho sus acciones
-    socket.on("change_phase", (data)=>{
-        console.log("change_phase");
-
-        //cambiar de ronda
-        const cambiar_de_fase = async()=>{
-            const todosListos = await userControllers.TodosListos(room_code);
-            const info_room = await roomControllers.RoomInfo(room_code);
-            
-            if(todosListos){
-                let set;
-                if(info_room.round === 0){
-                    set = 1;
-                }
-                else if(info_room.round === 1){
-                    set = 2;
-                }
-                else if(info_room.round === 2){
-                    set = 3;
-                }
-                else if(info_room.round === 3){
-                    set = 4;
-                }
-                else if(info_room.round === 4){
-                    set = 1
-                }
-                const info_room_return = await roomControllers.RoomHasChanges({
-                    room: info_room, 
-                    change: "day_phase",
-                    set});
-                await userControllers.QuitarListoEnTodos(room_code);
-                const userList_actualizada = roomControllers.RoomUserList(room_code)
-                io.to(room_code).emit("handle_room_changes", info_room_return);
-                io.to(room_code).emit("room_user_list", userList_actualizada);
-            }
-
-        }
-        cambiar_de_fase();
     })
 
     //Un usuario abandona la sala

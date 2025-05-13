@@ -13,7 +13,6 @@ export const Game = ({socket})=> {
     socket.on("room_user_list", (data)=>{      
       setUserList(data);
     })
-
     //La escucha de que algo en la sala ha cambiado
     socket.on("handle_room_changes", (data)=>{
       setRoom(data)
@@ -38,6 +37,8 @@ export const Game = ({socket})=> {
           set: !user.is_ready})
     }
 
+    console.table(userList)
+
   return (
     <>
         <div>
@@ -51,10 +52,10 @@ export const Game = ({socket})=> {
               <hr />
 
             </div>}
-            {room?.day_phase === 1 && <p>Fase del día: 🌙 Acciones 🌙</p>}
-            {room?.day_phase === 2 && <p>Fase del día: 🌙 Resultados 🌙</p>}
-            {room?.day_phase === 3 && <p>Fase del día: ☀️ Votaciones ☀️</p>}
-            {room?.day_phase === 4 && <p>Fase del día: ☀️ Resultados ☀️</p>}
+            {room?.day_phase === 1 && <p>1ª 🌙 Acciones Nocturnas🌙</p>}
+            {room?.day_phase === 2 && <p>2ª 🌙 Resultados Noche🌙</p>}
+            {room?.day_phase === 3 && <p>3ª ☀️ Votaciones ☀️</p>}
+            {room?.day_phase === 4 && <p>4ª ☀️ Resultados Votaciones☀️</p>}
         </div>
 
         {room?.day_phase === 0 &&
@@ -67,10 +68,12 @@ export const Game = ({socket})=> {
             <AccionesLobo
               socket={socket}
               user={user}
+              setUser={setUser}
               userList={userList}
               room={room}
               objetivosLobos={objetivosLobos}
               setObjetivosLobos={setObjetivosLobos}
+              listo_cancelar={listo_cancelar}
             />
           }
           {/* Si eres aldeano */}
